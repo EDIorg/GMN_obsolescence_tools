@@ -44,14 +44,13 @@ def main(input_filename: str, unresolved_dois_filename: str,output_filename: str
     _metadataObsoletedByPID = 5
 
     output = []
-    header = True
     with open(input_filename, 'r') as input_file:
         csvreader = csv.reader(input_file, delimiter=',')
+        # skip the header
+        next(csvreader)
+
         for doi_record in csvreader:
             if not doi_record:
-                continue
-            if header:
-                header = False
                 continue
             if doi_record[_doi] in unresolved_dois:
                 doi_record[_metadataPID] = unresolved_dois[doi_record[_doi]]
@@ -65,7 +64,7 @@ def main(input_filename: str, unresolved_dois_filename: str,output_filename: str
         columns = ['doi', 'obsoletes', 'obsoletedBy', 'metadataPID', 'metadataObsoletesPID', 'metadataObsoletedByPID']
         output_file.write('{}\n'.format(','.join(columns)))
         for output_record in output:
-            output_file.write('{0}\n'.format(','.join(output_record)))
+            output_file.write('{}\n'.format(','.join(output_record)))
 
 if __name__ == '__main__':
     resolve_unresolved_dois()
