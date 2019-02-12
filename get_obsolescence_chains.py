@@ -189,11 +189,13 @@ def resolve_metadataPIDs():
                 if doi_record.obsoletes in doi_records:                    
                     doi_record.metadataObsoletesPID = doi_records[doi_record.obsoletes].metadataPID
                 else:
+                    doi_record.metadataObsoletesPID = UNRESOLVED
                     print('doi not resolved: {}'.format(doi_record.obsoletes))
             if doi_record.obsoletedBy:
                 if doi_record.obsoletedBy in doi_records:                    
                     doi_record.metadataObsoletedByPID = doi_records[doi_record.obsoletedBy].metadataPID
                 else:
+                    doi_record.metadataObsoletedByPID = UNRESOLVED
                     print('doi not resolved: {}'.format(doi_record.obsoletedBy))
         else:
             print('doi not found: {}'.format(doi))
