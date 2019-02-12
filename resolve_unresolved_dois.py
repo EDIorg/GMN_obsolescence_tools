@@ -46,7 +46,7 @@ def pid_url(oid):
     Get the PID URL corresponding to the DOI
     """
     pid = doi2pid(oid)
-    return (PASTA_PREFIX + pid).replace('.', '/')
+    return PASTA_PREFIX + pid.replace('.', '/')
 
 
 def main(input_filename: str, output_filename: str):
