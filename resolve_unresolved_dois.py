@@ -93,9 +93,9 @@ def main(input_filename: str, output_filename: str):
         if doi_record[_metadataPID] == UNRESOLVED:
             doi_record[_metadataPID] = doi_lookup[doi_record[_doi]]
         if doi_record[_metadataObsoletesPID] == UNRESOLVED:
-           doi_record[_metadataObsoletesPID] = doi_record[_obsoletes]
+           doi_record[_metadataObsoletesPID] = doi_lookup[doi_record[_obsoletes]]
         if doi_record[_metadataObsoletedByPID] == UNRESOLVED:
-            doi_record[_metadataObsoletedByPID] = doi_record[_obsoletedBy]
+            doi_record[_metadataObsoletedByPID] = doi_lookup[doi_record[_obsoletedBy]]
 
     # Now write the output
     with open(output_filename, 'w') as output_file:
