@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import collections
 import csv
-import sys
 
 import click
 import requests
@@ -14,7 +12,7 @@ import requests
 @click.argument('output_csv_file')
 def resolve_unresolved_dois(obsolescence_chains_csv_file: str, output_csv_file: str):
     """
-    Updates a CSV file containing the obsolescence chains for DOIs associated with a DataONE Generic Member Node, replacing UNRESOLVED entries in the input CSV file. 
+    Update a CSV file containing the obsolescence chains for DOIs associated with a DataONE Generic Member Node, replacing UNRESOLVED entries in the input CSV file. 
 
 Arguments: \n
         OBSOLESCENCE_CHAINS_CSV_FILE: obsolescence chains as output by get_obsolescence_chains.py \n
@@ -23,30 +21,29 @@ Arguments: \n
     main(obsolescence_chains_csv_file, output_csv_file)
 
 
-PASTA_PREFIX = 'https://pasta.lternet.edu/package/metadata/eml/'
 UNRESOLVED = 'UNRESOLVED'
 
 
 def doi2pid(doi: str):
-    """
-    Get the PID corresponding to the DOI by parsing the landing page
-    """
+    """ Get the PID corresponding to the DOI by parsing the landing page. """
     # Get the html for the landing page corresponding to the doi
     url = "http://dx.doi.org/" + doi
     html = requests.get(url).text
-    # Find the PID
-    i = html.find('Package ID:')
-    j = html.find('<li>', i)
-    k = html.find('</li>', j)
-    return html[j+len('<li>'):k].replace('&nbsp;', '')
+    if html:
+        # Find the PID
+        i = html.find('PASTA Identifier:')
+        j = html.find('<li>', i)
+        k = html.find('</li>', j)
+        return html[j + len('<li>'):k]
+    else:
+        print('Unexpected error: failed to resolve {}'.format(doi))
+        return UNRESOLVED
 
 
 def pid_url(oid):
-    """
-    Get the PID URL corresponding to the DOI
-    """
+    """ Get the PID URL corresponding to a DOI. """
     pid = doi2pid(oid)
-    return PASTA_PREFIX + pid.replace('.', '/')
+    return pid.replace('.', '/')
 
 
 def main(input_filename: str, output_filename: str):
@@ -61,7 +58,6 @@ def main(input_filename: str, output_filename: str):
     _metadataObsoletedByPID = 5
 
     rows = []
-    output = []
     # Read in the input CSV file
     with open(input_filename, 'r') as input_file:
         csvreader = csv.reader(input_file, delimiter=',')
@@ -93,18 +89,25 @@ def main(input_filename: str, output_filename: str):
         if doi_record[_metadataPID] == UNRESOLVED:
             doi_record[_metadataPID] = doi_lookup[doi_record[_doi]]
         if doi_record[_metadataObsoletesPID] == UNRESOLVED:
-           doi_record[_metadataObsoletesPID] = doi_lookup[doi_record[_obsoletes]]
+            doi_record[_metadataObsoletesPID] = doi_lookup[doi_record[_obsoletes]]
         if doi_record[_metadataObsoletedByPID] == UNRESOLVED:
             doi_record[_metadataObsoletedByPID] = doi_lookup[doi_record[_obsoletedBy]]
 
     # Now write the output
     with open(output_filename, 'w') as output_file:
-        columns = ['doi', 'obsoletes', 'obsoletedBy', 'metadataPID', 'metadataObsoletesPID', 'metadataObsoletedByPID']
+        columns = [
+            'doi', 
+            'obsoletes', 
+            'obsoletedBy', 
+            'metadataPID', 
+            'metadataObsoletesPID', 
+            'metadataObsoletedByPID']
         output_file.write('{}\n'.format(','.join(columns)))
         for doi_record in rows:
             if not doi_record:
                 continue
             output_file.write('{}\n'.format(','.join(doi_record)))
+
 
 if __name__ == '__main__':
     resolve_unresolved_dois()

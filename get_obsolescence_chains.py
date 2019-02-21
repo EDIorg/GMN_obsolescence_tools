@@ -8,9 +8,7 @@ from datetime import datetime
 import sys
 import time
 from typing import List
-import urllib
 
-import aiohttp
 from aiohttp import ClientSession
 import click
 from namedlist import namedlist
@@ -19,20 +17,23 @@ import xml.etree.ElementTree as ET
 
 TRACE = False
 UNRESOLVED = 'UNRESOLVED'
-MAX_RETRIES = 5
+MAX_RETRIES = 3
 
 doi_records = collections.OrderedDict()
 
-DOI_record = namedlist('DOI_record', 
-                      'doi obsoletes obsoletedBy metadataPID metadataObsoletesPID metadataObsoletedByPID',
-                      default = None)
+DOI_record = namedlist(
+    'DOI_record', 
+    'doi obsoletes obsoletedBy metadataPID metadataObsoletesPID metadataObsoletedByPID',
+    default=None)
 
 
 @click.command()
-@click.option('--mn', default='gmn.lternet.edu', help='member node: e.g., gmn.lternet.edu, gmn.edirepository.org. default: gmn.lternet.edu')
+@click.option('-m', 
+    default='gmn.lternet.edu', 
+    help='member node: e.g., gmn.lternet.edu, gmn.edirepository.org. default: gmn.lternet.edu')
 @click.argument('doi_file')
 @click.argument('output_csv_file')
-def get_obsolescence_chains(mn: str, doi_file: str, output_csv_file: str):
+def get_obsolescence_chains(m: str, doi_file: str, output_csv_file: str):
     """
     Generates a CSV file containing the obsolescence chains for DOIs associated with a DataONE Generic Member Node. 
 
@@ -51,7 +52,7 @@ Arguments: \n
         print('Requires Python 3.7 or later')
         exit(0)
 
-    main(mn, doi_file, output_csv_file)
+    main(m, doi_file, output_csv_file)
 
 
 async def get_ORE_metadata(mn: str, doi: str, session: ClientSession, **kwargs) -> str:
@@ -70,7 +71,6 @@ async def get_ORE_object(mn: str, doi: str, session: ClientSession, **kwargs) ->
 
 async def parse_ORE_metadata(mn: str, doi: str, session: ClientSession):
     global doi_records
-    
     retries = 0
     while retries < MAX_RETRIES:
         try:
@@ -89,7 +89,7 @@ async def parse_ORE_metadata(mn: str, doi: str, session: ClientSession):
     obsoletedBy = None
     metadataObsoletesPID = None
     metadataObsoletedByPID = None
-    
+
     root = ET.fromstring(metadata_response)
     for child in root:
         if child.tag == 'obsoletes':
@@ -129,14 +129,16 @@ async def parse_ORE_object(mn: str, doi: str, session: ClientSession):
             time.sleep(1)    
 
     metadataPID = None
-    matched_lines = [line for line in object_response.split('\n') if "https://pasta.lternet.edu/package/metadata/eml/" in line]
+    matched_lines = [line for line in object_response.split('\n') 
+        if "https://pasta.lternet.edu/package/metadata/eml/" in line]
     if len(matched_lines) == 0:
         print('metadataPID not found for {}'.format(doi))
         return
     if len(matched_lines) > 1:
         print('Multiple metadataPIDs found for {}'.format(doi))
         return
-    metadataPID = matched_lines[0].strip().replace('<dcterms:identifier>', '').replace('</dcterms:identifier>', '')
+    metadataPID = matched_lines[0].strip().replace(
+        '<dcterms:identifier>', '').replace('</dcterms:identifier>', '')
     if doi in doi_records:  
         doi_records[doi].metadataPID = metadataPID
 
@@ -152,7 +154,7 @@ async def run_ORE_object_tasks(mn: str, dois: List[str]):
         tasks = [parse_ORE_object(mn, doi, session) for doi in dois]
         await asyncio.gather(*tasks)
 
-    
+
 def process_doi_file(mn: str, doi_filename: str):
     count = 0
     dois = []
@@ -166,7 +168,8 @@ def process_doi_file(mn: str, doi_filename: str):
             if doi not in doi_records:
                 doi_records[doi] = DOI_record(doi, None, None, UNRESOLVED, None, None)
             else:
-                print('Unexpected Error - attempted to add a doi that was already in the dictionary: ', doi)
+                print('Unexpected Error - attempted to add a doi that was already in the dict: ', 
+                      doi)
             count += 1
             # Access the member node in bursts so we don't do a denial of service attack on it
             if count % 25 == 0:
@@ -202,9 +205,19 @@ def resolve_metadataPIDs():
 
 
 def save_to_csv(csv_filename: str):
-    columns = ['doi', 'obsoletes', 'obsoletedBy', 'metadataPID', 'metadataObsoletesPID', 'metadataObsoletedByPID']
+    columns = [
+        'doi', 
+        'obsoletes', 
+        'obsoletedBy', 
+        'metadataPID', 
+        'metadataObsoletesPID', 
+        'metadataObsoletedByPID']
     with open(csv_filename, mode='w') as obsolescence_csv:
-        csv_writer = csv.writer(obsolescence_csv, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        csv_writer = csv.writer(
+            obsolescence_csv, 
+            delimiter=',', 
+            quotechar='"', 
+            quoting=csv.QUOTE_MINIMAL)
         csv_writer.writerow(columns)
         for doi, doi_record in doi_records.items():
             csv_writer.writerow(list(doi_record))
@@ -220,5 +233,6 @@ if __name__ == '__main__':
     print(datetime.now().strftime("%H:%M:%S"))
     try:
         get_obsolescence_chains()
-    finally:  # click exits via sys.exit(), so we use try/finally to get the ending datetime to display
+    finally:  
+        # click exits via sys.exit(), so we use try/finally to get the ending datetime to display
         print(datetime.now().strftime("%H:%M:%S"))
