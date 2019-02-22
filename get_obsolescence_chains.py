@@ -183,6 +183,7 @@ def process_doi_file(mn: str, doi_filename: str):
     # Pick up the leftover dois, if any
     asyncio.run(run_ORE_metadata_tasks(mn, dois))
     asyncio.run(run_ORE_object_tasks(mn, dois))
+    print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")))
 
 
 def resolve_metadataPIDs():
