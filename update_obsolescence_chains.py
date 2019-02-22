@@ -124,15 +124,20 @@ async def run_get_metadata_tasks(mn: str, pids: List[str]):
         await asyncio.gather(*tasks)
 
 
-def add_tag(root, tag, text, after_tag=None):
+def add_tag(root, tag, text, after_tags=None):
     """
-    Adds an XML tag, placing it after after_tag, if specified.
-    Returns the root of the updated element tree.
+    Adds an XML tag, placing. Returns the root of the updated element tree.
+
+    after_tags is a sequence of tags. The new tag is added after the
+    first tag in the list that is actually present.
     """
     index = -1
-    if after_tag:
-        children = [child.tag for child in root]
-        index = children.index(after_tag) + 1
+    if after_tags:
+        for after_tag in after_tags:
+            if root.find(after_tag):
+                children = [child.tag for child in root]
+                index = children.index(after_tag) + 1
+                break
     node = ET.Element(tag)
     node.text = text
     root.insert(index, node)
@@ -281,16 +286,16 @@ def fixup_metadata_xml(mn, pid, client_certificate_path):
     # If needed, update the metadata
 
     if obsoletes_status == Tag_Status.ADD:
-        root = add_tag(root, 'obsoletes', obsoletes, 'accessPolicy')
+        root = add_tag(root, 'obsoletes', obsoletes, ('replicationPolicy', 'accessPolicy'))
     elif obsoletes_status == Tag_Status.REPLACE:
         root = replace_tag(root, 'obsoletes', obsoletes)
     elif obsoletes_status == Tag_Status.REMOVE:
         root = remove_tag(root, 'obsoletes')
     # Put the tag in the right sequence; otherwise, schema validation fails
     if len(root.findall('obsoletes')) > 0:
-        prev = 'obsoletes'
+        prev = ('obsoletes')
     else:
-        prev = 'accessPolicy'
+        prev = ('replicationPolicy', 'accessPolicy')
 
     if obsoletedBy_status == Tag_Status.ADD:
         root = add_tag(root, 'obsoletedBy', obsoletedBy, prev)
@@ -382,6 +387,7 @@ def main(obsolescence_chains_csv_file: str,
         if count % 1000 == 0:   # Just so we can see signs of life...
             print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")))
     asyncio.run(run_get_metadata_tasks(mn, pids))
+    print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")))
 
     # Now that we've got the metadata, modify it as needed and update it on the member node
     print('Updating metadata')
