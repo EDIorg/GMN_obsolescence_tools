@@ -185,8 +185,8 @@ def main(obsolescence_chains_csv_file: str, mn: str, max_n: int, deep: bool):
             pids = []
         if count % 1000 == 0:   # Just so we can see signs of life...
             print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")))
-    print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")))
     asyncio.run(run_get_metadata_tasks(mn, pids))
+    print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")))
 
     # Now that we've got the metadata, check it against the expected values
     print('\nChecking metadata')
