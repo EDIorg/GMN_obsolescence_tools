@@ -24,7 +24,7 @@ Update the output CSV from the previous step, replacing UNRESOLVED entries by re
 #### 4. update_obsolescence_chains.py
 Construct updated system metadata for packages needing obsolescence chains, and use the REST API to update the system metadata for packages whose metadata needs updating. Optionally, create a TSV file with the updated metadata.
 - E.g., 
-> ./update_obsolescence_chains.py lternet.edu_obsolescence_chains_resolved.csv "<path to X.509 client certificate>" -m gmn.lternet.edu -o lternet.edu_updates.tsv
+> ./update_obsolescence_chains.py lternet.edu_obsolescence_chains_resolved.csv "path to X.509 client certificate" -m gmn.lternet.edu -o lternet.edu_updates.tsv
 
 This may take 1-2 hours to run.
 
