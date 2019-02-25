@@ -1,15 +1,15 @@
 # GMN_obsolescence_tools
-Tools for fixing up the obsolescence chains in system metadata for package EML in a GMN
+Tools for fixing up the obsolescence chains in system metadata for package EML in a DataONE Generic Member Node
 
 ## Sample Workflow
 Suppose the member node to be updated is gmn.lternet.edu. The workflow is as follows:
 
 #### 1. Server-side PostgreSQL query to get a list of DOIs associated with the GMN
-- E.g., using the "gmn" account on the gmn server:
+- E.g., using the "gmn" account on the GMN server:
 > `psql -d gmn3 -P pager -c "select did from app_idnamespace where did like 'doi:10.6073/pasta/%'" > doi_list.csv`
 
 #### 2. get_obsolescence_chains.py
-Generate a CSV file containing the obsolescence chains for DOIs associated with a DataONE Generic Member Node.
+Generate a CSV file containing the obsolescence chains for DOIs associated with a GMN.
 The output CSV file has a header row. Columns are: doi, obsoletes, obsoletedBy, metadataPID, metadataPIDObsoletes, metadataPIDObsoletedBy
 - E.g., 
 > `./get_obsolescence_chains.py doi_list.csv lternet.edu_obsolescence_chains.csv -m gmn.lternet.edu`
