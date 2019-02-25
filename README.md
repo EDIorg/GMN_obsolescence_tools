@@ -33,4 +33,4 @@ Check the obsolescence chains in system metadata against the expected values bas
 - E.g., 
 > ./check_metadata_obsolescence_entries.py lternet.edu_obsolescence_chains_resolved.csv -m gmn.lternet.edu
 
-By default, it checks obsolescence chains only for objects that have obsolescence information in the OREs. To check all objects, use the --deep option. Running the default case may take 30-60 minutes.
+By default, we check obsolescence chains only for objects that have obsolescence information in the OREs. To check all objects, use the --deep option. Running the default case may take 30-60 minutes.
