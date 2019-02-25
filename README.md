@@ -1,5 +1,5 @@
 # GMN_obsolescence_tools
-Tools for fixing up the obsolescence chains in system metadata for package EML in a DataONE Generic Member Node
+Tools for fixing up the obsolescence chains in system metadata for packages in a DataONE Generic Member Node
 
 ## Sample Workflow
 Suppose the member node to be updated is gmn.lternet.edu. The workflow is as follows:
