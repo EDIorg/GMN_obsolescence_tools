@@ -15,6 +15,7 @@ Suppose the member node to be updated is gmn.lternet.edu. The workflow is as fol
 Run each of the other python scripts (see below). It can be run for a subset of the DOIs. The intention is that the DOIs can be processed in batches, so as not to overwhelm the DataONE Coordinating Node.
 - E.g.,
 > ./repair_obsolescence_batch doi_list.csv 3000 4000 gmn.lternet.edu ../certs/urn_node_LTER-2.pem output_3000_4000
+
 This would run the repair sequence on DOIs 3000-3999 in the list, using the designated X.509 certificate, and saving output in subdirectory output_3000_4000. To run on the entire set of DOIs, use 0 and -1 as start and end indices. The output consists of the output of each script in the sequence, including their stdout output, in separate files.
 
 
