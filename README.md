@@ -12,7 +12,7 @@ Suppose the member node to be updated is gmn.lternet.edu. The workflow is as fol
 > `psql -d gmn3 -P pager -c "select did from app_idnamespace where did like 'doi:10.6073/pasta/%'" > doi_list.csv`
 
 #### 2. repair_obsolescence_batch.py
-Run each of the other python scripts (see below). It can be run for a subset of the DOIs. The intention is that the DOIs can be processed in batches, so as not to overwhelm the DataONE Coordinating Node.
+The "master script" that runs each of the other python scripts (see below). It can be run for a subset of the DOIs. The intention is that the DOIs can be processed in batches, so as not to overwhelm the DataONE Coordinating Node.
 - E.g.,
 > ./repair_obsolescence_batch doi_list.csv 3000 4000 gmn.lternet.edu ../certs/urn_node_LTER-2.pem output_3000_4000
 
