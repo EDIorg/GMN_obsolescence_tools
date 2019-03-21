@@ -134,13 +134,14 @@ def add_tag(root, tag, text, after_tags=None):
     index = -1
     if after_tags:
         for after_tag in after_tags:
-            if root.find(after_tag):
+            if len(root.findall('.//' + after_tag)) > 0:
                 children = [child.tag for child in root]
                 index = children.index(after_tag) + 1
                 break
-    node = ET.Element(tag)
-    node.text = text
-    root.insert(index, node)
+    if index > -1:
+        node = ET.Element(tag)
+        node.text = text
+        root.insert(index, node)
     return root
 
 
@@ -213,6 +214,7 @@ def send_update_sys_metadata(mn: str, pid: str, metadata_xml: str, client_certif
                 retries += 1
                 if retries >= MAX_RETRIES:
                     print('Reached max retries updating metadata. Giving up...')
+                    print(metadata_xml)
                     return
                 time.sleep(1)
             else:
@@ -268,7 +270,7 @@ def fixup_metadata_xml(mn, pid, client_certificate_path):
             else:
                 # obsoletes tag is present but shouldn't be
                 obsoletes_status = Tag_Status.REMOVE
-        
+
         if child.tag == 'obsoletedBy':
             obsoletedBy_value = child.text
             if obsoletedBy:
@@ -291,9 +293,10 @@ def fixup_metadata_xml(mn, pid, client_certificate_path):
         root = replace_tag(root, 'obsoletes', obsoletes)
     elif obsoletes_status == Tag_Status.REMOVE:
         root = remove_tag(root, 'obsoletes')
-    # Put the tag in the right sequence; otherwise, schema validation fails
+
+    # Put the obsoletedBy tag in the right position; otherwise, schema validation fails
     if len(root.findall('obsoletes')) > 0:
-        prev = ('obsoletes')
+        prev = ('obsoletes',)
     else:
         prev = ('replicationPolicy', 'accessPolicy')
 
