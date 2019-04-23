@@ -18,6 +18,7 @@ import xml.etree.ElementTree as ET
 TRACE = False
 UNRESOLVED = 'UNRESOLVED'
 MAX_RETRIES = 3
+BURST_SIZE = 10
 
 doi_records = collections.OrderedDict()
 
@@ -77,11 +78,11 @@ async def parse_ORE_metadata(mn: str, doi: str, session: ClientSession):
             metadata_response = await get_ORE_metadata(mn, doi, session)
             break  # no exception, so get out of the retry loop
         except:
-            print('Exception: ', sys.exc_info()[0])
+            print('Exception: ', sys.exc_info()[0], flush=True)
             retries += 1
-            print('retries:', retries, ' ', doi, '  getting ORE metadata')
+            print('retries:', retries, ' ', doi, '  getting ORE metadata', flush=True)
             if retries >= MAX_RETRIES:
-                print('Reached max retries getting ORE metadata. Giving up...')
+                print('Reached max retries getting ORE metadata. Giving up...', flush=True)
                 return
             time.sleep(1)
 
@@ -103,7 +104,7 @@ async def parse_ORE_metadata(mn: str, doi: str, session: ClientSession):
             if TRACE:
                 print('{} obsoletedBy {}'.format(obsoletedBy, doi))
     if doi not in doi_records:
-        print('Unexpected Error - parse_ORE_metadata finds doi not in dictionary: ', doi)
+        print('Unexpected Error - parse_ORE_metadata finds doi not in dictionary: ', doi, flush=True)
         doi_records[doi] = DOI_record(doi, obsoletes, obsoletedBy, UNRESOLVED, None, None)
     doi_records[doi].obsoletes = obsoletes
     doi_records[doi].obsoletedBy = obsoletedBy        
@@ -120,11 +121,11 @@ async def parse_ORE_object(mn: str, doi: str, session: ClientSession):
             object_response = await get_ORE_object(mn, doi, session)
             break  # no exception, so get out of the retry loop
         except:
-            print('Exception: ', sys.exc_info()[0])
+            print('Exception: ', sys.exc_info()[0], flush=True)
             retries += 1
-            print('retries:', retries, ' ', doi, '  getting ORE object')
+            print('retries:', retries, ' ', doi, '  getting ORE object', flush=True)
             if retries >= MAX_RETRIES:
-                print('Reached max retries getting ORE object. Giving up...')
+                print('Reached max retries getting ORE object. Giving up...', flush=True)
                 return
             time.sleep(1)    
 
@@ -132,10 +133,10 @@ async def parse_ORE_object(mn: str, doi: str, session: ClientSession):
     matched_lines = [line for line in object_response.split('\n') 
         if "https://pasta.lternet.edu/package/metadata/eml/" in line]
     if len(matched_lines) == 0:
-        print('metadataPID not found for {}'.format(doi))
+        print('metadataPID not found for {}'.format(doi), flush=True)
         return
     if len(matched_lines) > 1:
-        print('Multiple metadataPIDs found for {}'.format(doi))
+        print('Multiple metadataPIDs found for {}'.format(doi), flush=True)
         return
     metadataPID = matched_lines[0].strip().replace(
         '<dcterms:identifier>', '').replace('</dcterms:identifier>', '')
@@ -169,21 +170,21 @@ def process_doi_file(mn: str, doi_filename: str):
                 doi_records[doi] = DOI_record(doi, None, None, UNRESOLVED, None, None)
             else:
                 print('Unexpected Error - attempted to add a doi that was already in the dict: ', 
-                      doi)
+                      doi, flush=True)
             count += 1
             # Access the member node in bursts so we don't do a denial of service attack on it
-            if count % 25 == 0:
+            if count % BURST_SIZE == 0:
                 asyncio.run(run_ORE_metadata_tasks(mn, dois))
                 time.sleep(1)
                 asyncio.run(run_ORE_object_tasks(mn, dois))
                 time.sleep(1)
                 dois = []
-            if count % 1000 == 0:   # Just so we can see signs of life...
-                print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")))
+            if count % 100 == 0:   # Just so we can see signs of life...
+                print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")), flush=True)
     # Pick up the leftover dois, if any
     asyncio.run(run_ORE_metadata_tasks(mn, dois))
     asyncio.run(run_ORE_object_tasks(mn, dois))
-    print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")))
+    print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")), flush=True)
 
 
 def resolve_metadataPIDs():
@@ -202,7 +203,7 @@ def resolve_metadataPIDs():
                     doi_record.metadataObsoletedByPID = UNRESOLVED
                     print('doi not resolved: {}'.format(doi_record.obsoletedBy))
         else:
-            print('doi not found: {}'.format(doi))
+            print('doi not found: {}'.format(doi), flush=True)
 
 
 def save_to_csv(csv_filename: str):
@@ -231,9 +232,9 @@ def main(mn: str, doi_filename: str, csv_filename: str):
 
 
 if __name__ == '__main__':
-    print(datetime.now().strftime("%H:%M:%S"))
+    print(datetime.now().strftime("%H:%M:%S"), flush=True)
     try:
         get_obsolescence_chains()
     finally:  
         # click exits via sys.exit(), so we use try/finally to get the ending datetime to display
-        print(datetime.now().strftime("%H:%M:%S"))
+        print(datetime.now().strftime("%H:%M:%S"), flush=True)

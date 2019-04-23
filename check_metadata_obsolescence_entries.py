@@ -12,6 +12,7 @@ import urllib.parse
 from aiohttp import ClientSession
 import asyncio
 import click
+import difflib
 from namedlist import namedlist
 import xml.etree.ElementTree as ET
 
@@ -51,6 +52,7 @@ get_obsolescence_chains.py and resolve_unresolved_dois.py
 
 UNRESOLVED = "UNRESOLVED"
 MAX_RETRIES = 3
+BURST_SIZE = 10
 
 
 metadata_records = collections.OrderedDict()
@@ -83,11 +85,11 @@ async def save_metadata(mn: str, pid: str, session: ClientSession):
             metadata_response = await get_metadata(mn, pid, session)
             break  # no exception, so break out of the retry loop
         except:
-            print('Exception: ', sys.exc_info()[0])
+            print('Exception: ', sys.exc_info()[0], flush=True)
             retries += 1
-            print('retries:', retries, ' ', pid, '  getting metadata')
+            print('retries:', retries, ' ', pid, '  getting metadata', flush=True)
             if retries >= MAX_RETRIES:
-                print('Reached max retries getting metadata. Giving up...')
+                print('Reached max retries getting metadata. Giving up...', flush=True)
                 return
             time.sleep(1)
     metadata_records[pid] = metadata_response
@@ -107,7 +109,7 @@ def check_for_consistency(doi_record, metadata):
     """ Check metadata xml for agreement with the DOI record. """
     pid = doi_record.metadataPID
     if not metadata:
-        print('Metadata not available for pid', pid)
+        print('Metadata not available for pid', pid, flush=True)
         return
 
     expect_obsoletes = doi_record.metadataObsoletesPID
@@ -126,17 +128,19 @@ def check_for_consistency(doi_record, metadata):
         have_obsoletedBy = ''
 
     if expect_obsoletes != have_obsoletes or expect_obsoletedBy != have_obsoletedBy:
-        print(pid)
+        print(pid, flush=True)
 
     if expect_obsoletes != have_obsoletes:
-        print('   Expected obsoletes={}'.format(expect_obsoletes))
-        print('   Found obsoletes   ={}'.format(have_obsoletes))
+        print('   Expected obsoletes={}'.format(ascii(expect_obsoletes)), flush=True)
+        print('   Found obsoletes   ={}'.format(ascii(have_obsoletes)), flush=True)
+        print('\n'.join(difflib.ndiff([expect_obsoletes], [have_obsoletes])))
     if expect_obsoletedBy != have_obsoletedBy:
-        print('   Expected obsoletedBy={}'.format(expect_obsoletedBy))
-        print('   Found obsoletedBy   ={}'.format(have_obsoletedBy))
+        print('   Expected obsoletedBy={}'.format(ascii(expect_obsoletedBy)), flush=True)
+        print('   Found obsoletedBy   ={}'.format(ascii(have_obsoletedBy)), flush=True)
+        print('\n'.join(difflib.ndiff([expect_obsoletedBy], [have_obsoletedBy])))
 
     if expect_obsoletes != have_obsoletes or expect_obsoletedBy != have_obsoletedBy:
-        print()
+        print(flush=True)
 
 
 def main(obsolescence_chains_csv_file: str, mn: str, max_n: int, deep: bool):
@@ -151,7 +155,7 @@ def main(obsolescence_chains_csv_file: str, mn: str, max_n: int, deep: bool):
         if input_csv_file.read().find(UNRESOLVED) > -1:
             print(
                 'UNRESOLVED DOIs found. Please run resolve_unresolved_dois.py '
-                'and use its output. Exiting.'
+                'and use its output. Exiting.', flush=True
             )
             exit(0)
 
@@ -168,29 +172,29 @@ def main(obsolescence_chains_csv_file: str, mn: str, max_n: int, deep: bool):
                 # This will make it easier to check and troubleshoot.
                 metadata_records[pid] = None
 
-    print(len(doi_records))
+    print(len(doi_records), flush=True)
 
     # Go get the metadata that needs to be modified
-    print('\nGetting metadata')
+    print('\nGetting metadata', flush=True)
     count = 0
     pids = []
     for _, doi_record in doi_records.items():
         pids.append(doi_record.metadataPID)
         count += 1
         # Access the member node in bursts so we don't do a denial of service attack on it
-        if count % 25 == 0:
+        if count % BURST_SIZE == 0:
             # Create tasks to get metadata
             asyncio.run(run_get_metadata_tasks(mn, pids))
             time.sleep(1)
             pids = []
         if count % 1000 == 0:   # Just so we can see signs of life...
-            print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")))
+            print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")), flush=True)
     asyncio.run(run_get_metadata_tasks(mn, pids))
-    print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")))
+    print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")), flush=True)
 
     # Now that we've got the metadata, check it against the expected values
-    print('\nChecking metadata')
-    print()
+    print('\nChecking metadata', flush=True)
+    print(flush=True)
 
     doi_pids = set()
     metadata_pids = set()
@@ -199,12 +203,12 @@ def main(obsolescence_chains_csv_file: str, mn: str, max_n: int, deep: bool):
     for pid, metadata_record in metadata_records.items():
         metadata_pids.add(pid)
     if doi_pids != metadata_pids:
-        print('PIDs that are in DOI table but not in metadata table:')
-        print(doi_pids - metadata_pids)
-        print()
-        print('PIDs that are in metadata table but not in DOI table:')
-        print(metadata_pids - doi_pids)
-        print()
+        print('PIDs that are in DOI table but not in metadata table:', flush=True)
+        print(doi_pids - metadata_pids, flush=True)
+        print(flush=True)
+        print('PIDs that are in metadata table but not in DOI table:', flush=True)
+        print(metadata_pids - doi_pids, flush=True)
+        print(flush=True)
 
     for doi, doi_record in doi_records.items():
         pid = doi_record.metadataPID
@@ -214,10 +218,10 @@ def main(obsolescence_chains_csv_file: str, mn: str, max_n: int, deep: bool):
 
 
 if __name__ == '__main__':
-    print(datetime.now().strftime('%H:%M:%S'))
+    print(datetime.now().strftime('%H:%M:%S'), flush=True)
     try:
         check_metadata_obsolescence_entries()
     finally:
         # click exits via sys.exit(), so we use try/finally to get the
         # ending datetime to display
-        print(datetime.now().strftime('%H:%M:%S'))
+        print(datetime.now().strftime('%H:%M:%S'), flush=True)

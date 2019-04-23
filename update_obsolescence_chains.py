@@ -104,11 +104,11 @@ async def save_metadata(mn: str, pid: str, session: ClientSession):
             metadata_response = await get_metadata(mn, pid, session)
             break  # no exception, so break out of the retry loop
         except:
-            print('Exception: ', sys.exc_info()[0])
+            print('Exception: ', sys.exc_info()[0], flush=True)
             retries += 1
-            print('retries:', retries, ' ', pid, '  getting metadata')
+            print('retries:', retries, ' ', pid, '  getting metadata', flush=True)
             if retries >= MAX_RETRIES:
-                print('Reached max retries getting metadata. Giving up...')
+                print('Reached max retries getting metadata. Giving up...', flush=True)
                 return
             time.sleep(1)
     metadata_records[pid].original_metadata = metadata_response
@@ -187,7 +187,7 @@ def send_update_sys_metadata(mn: str, pid: str, metadata_xml: str, client_certif
     Send a updateSysMetadata request to the member node.
     This is not done asynchronously because we need to use PreparedRequest.
     """
-    print('updateSysMetadata: ', pid)
+    print('updateSysMetadata: ', pid, flush=True)
     global sent_count
     sent_count += 1
     session = Session()    
@@ -210,21 +210,21 @@ def send_update_sys_metadata(mn: str, pid: str, metadata_xml: str, client_certif
         try:
             resp = session.send(prepped_request, cert=client_certificate_path)
             if resp.status_code != 200:
-                print('{} return status code = {}'.format(sysmeta_filename, str(resp.status_code)))
+                print('{} return status code = {}'.format(sysmeta_filename, str(resp.status_code)), flush=True)
                 retries += 1
                 if retries >= MAX_RETRIES:
-                    print('Reached max retries updating metadata. Giving up...')
-                    print(metadata_xml)
+                    print('Reached max retries updating metadata. Giving up...', flush=True)
+                    print(metadata_xml, flush=True)
                     return
                 time.sleep(1)
             else:
                 break
         except:
-            print('Exception: ', sys.exc_info())
+            print('Exception: ', sys.exc_info(), flush=True)
             retries += 1
-            print('retries:', retries, ' ', pid, '  getting metadata')
+            print('retries:', retries, ' ', pid, '  getting metadata', flush=True)
             if retries >= MAX_RETRIES:
-                print('Reached max retries updating metadata. Giving up...')
+                print('Reached max retries updating metadata. Giving up...', flush=True)
                 return
             time.sleep(1)
     return status_code
@@ -356,7 +356,7 @@ def main(obsolescence_chains_csv_file: str,
         if input_csv_file.read().find(UNRESOLVED) > -1:
             print(
                 'UNRESOLVED DOIs found. Please run resolve_unresolved_dois.py '
-                'and use its output. Exiting.'
+                'and use its output. Exiting.', flush=True
             )
             exit(0)
 
@@ -374,7 +374,7 @@ def main(obsolescence_chains_csv_file: str,
                 metadata_records[pid] = Metadata_record(pid, '', '', '', 'NA')
 
     # Go get the metadata that needs to be modified
-    print('Getting metadata')
+    print('Getting metadata', flush=True)
     count = 0
     pids = []
     for _, doi_record in doi_records.items():
@@ -388,16 +388,16 @@ def main(obsolescence_chains_csv_file: str,
             time.sleep(1)
             pids = []
         if count % 1000 == 0:   # Just so we can see signs of life...
-            print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")))
+            print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")), flush=True)
     asyncio.run(run_get_metadata_tasks(mn, pids))
-    print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")))
+    print('count = {}, time = {}'.format(count, datetime.now().strftime("%H:%M:%S")), flush=True)
 
     # Now that we've got the metadata, modify it as needed and update it on the member node
-    print('Updating metadata')
+    print('Updating metadata', flush=True)
     pids = []
     for pid, metadata_record in metadata_records.items():
         if metadata_record.original_metadata == 'NA':
-            print('Unexpected Error: original_metadata not found for {}'.format(pid))
+            print('Unexpected Error: original_metadata not found for {}'.format(pid), flush=True)
             continue
         count += 1
         fixup_metadata_xml(mn, pid, client_certificate_path)        
@@ -406,10 +406,10 @@ def main(obsolescence_chains_csv_file: str,
 
 
 if __name__ == '__main__':
-    print(datetime.now().strftime('%H:%M:%S'))
+    print(datetime.now().strftime('%H:%M:%S'), flush=True)
     try:
         update_obsolescence_chains()
     finally:
         # click exits via sys.exit(), so we use try/finally to get the
         # ending datetime to display
-        print(datetime.now().strftime('%H:%M:%S'))
+        print(datetime.now().strftime('%H:%M:%S'), flush=True)
