@@ -3,7 +3,9 @@ Tools for fixing up the obsolescence chains in system metadata for packages in a
 
 The workflow consists of several steps: a server-side SQL query followed by a sequence of Python scripts. The Python scripts can be run separately or via the master script repair_obsolescence_batch.py.
 
-Note that each of the scripts below can be run with --help option to get a description and list of arguments and options.
+In addition, there are several scripts that implement consistency checks, including consistency among member nodes, coordinating nodes, and PASTA.
+
+Note that each of the scripts below can be run with the --help option to get a description and list of arguments and options.
 
 
 ## Sample Workflow Using the Master Script
