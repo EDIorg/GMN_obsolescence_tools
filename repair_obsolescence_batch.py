@@ -15,7 +15,13 @@ import click
 @click.argument('member_node')
 @click.argument('path_to_x509_cert')
 @click.argument('output_file_prefix')
-def repair_obsolescence_batch(doi_file: str, start: str, end: str, member_node: str,  path_to_x509_cert: str, output_file_prefix: str):
+@click.option(
+    "-t",
+    default=None,
+    help="TSV file with DOI to PID mapping"
+)
+def repair_obsolescence_batch(doi_file: str, start: str, end: str, member_node: str, 
+                              path_to_x509_cert: str, output_file_prefix: str, t: str):
     """
     Run a batch of DOIs through the obsolescence chain repair process.
 
@@ -39,7 +45,7 @@ Arguments: \n
         print('Requires Python 3.7 or later')
         exit(0)
 
-    main(doi_file, int(start), int(end), member_node, path_to_x509_cert, output_file_prefix)
+    main(doi_file, int(start), int(end), member_node, path_to_x509_cert, output_file_prefix, t)
 
 
 def read_doi_excerpt(doi_filename: str, start: int, end: int, output_file_prefix: str):
@@ -68,17 +74,22 @@ def get_obsolescence_chains(excerpt_filename: str, output_file_prefix: str, mn: 
     return chains_filename
 
 
-def resolve_unresolved_dois(chains_filename: str, output_file_prefix: str):
+def resolve_unresolved_dois(chains_filename: str, output_file_prefix: str, tsv_file_name: str):
     resolved_filename = output_file_prefix + '_obsolescence_chains_resolved.csv'
     stdout_filename = output_file_prefix + '_obsolescence_chains_resolved.stdout'
-    cmdline = './resolve_unresolved_dois.py {} {} > {}'.format(chains_filename, 
-        resolved_filename, stdout_filename)
+    if tsv_file_name:
+        cmdline = './resolve_unresolved_dois.py {} {} -t {} > {}'.format(chains_filename, 
+            resolved_filename, tsv_file_name, stdout_filename)
+    else:
+        cmdline = './resolve_unresolved_dois.py {} {} > {}'.format(chains_filename, 
+            resolved_filename, stdout_filename)        
     print(cmdline)
     os.system(cmdline)
     return resolved_filename
 
 
-def update_obsolescence_chains(resolved_filename: str, path_to_x509_cert: str, output_file_prefix: str, mn: str):
+def update_obsolescence_chains(resolved_filename: str, path_to_x509_cert: str, 
+                               output_file_prefix: str, mn: str):
     updates_filename = output_file_prefix + '_updates.tsv'
     stdout_filename = output_file_prefix + '_updates.stdout'
     cmdline = './update_obsolescence_chains.py {} {} -m {} -o {} > {}'.format(resolved_filename, 
@@ -95,10 +106,11 @@ def check_metadata_obsolescence_entries(resolved_filename: str, output_file_pref
     os.system(cmdline)
 
 
-def main(doi_filename: str, start: int, end: int, mn: str, path_to_x509_cert: str, output_file_prefix: str):
+def main(doi_filename: str, start: int, end: int, mn: str, path_to_x509_cert: str, 
+         output_file_prefix: str, tsv_file_name: str):
     excerpt_filename = read_doi_excerpt(doi_filename, start, end, output_file_prefix)
     chains_filename = get_obsolescence_chains(excerpt_filename, output_file_prefix, mn)
-    resolved_filename = resolve_unresolved_dois(chains_filename, output_file_prefix)
+    resolved_filename = resolve_unresolved_dois(chains_filename, output_file_prefix, tsv_file_name)
     update_obsolescence_chains(resolved_filename, path_to_x509_cert, output_file_prefix, mn)
     check_metadata_obsolescence_entries(resolved_filename, output_file_prefix, mn)
 
